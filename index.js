@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
@@ -15,13 +15,27 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
-client.connect((err) => {
-  const toolCollection = client.db("power_painting").collection("tools");
-  console.log("Coonected");
 
-  // perform actions on the collection object
-  client.close();
-});
+async function run() {
+  try {
+    await client.connect();
+    const toolCollection = client.db("power_painting").collection("tools");
+
+    app.get("/tool", async (req, res) => {
+      const query = {};
+      const tools = await toolCollection.find({}).limit(6).toArray();
+      res.send(tools);
+    });
+    app.get("/tool/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: ObjectId(id) };
+      const result = await toolCollection.findOne(query);
+      res.send(result);
+    });
+  } finally {
+  }
+}
+run().catch(console.dir);
 
 app.get("/", (req, res) => {
   res.send("Hello From power painting!");
