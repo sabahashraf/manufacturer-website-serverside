@@ -21,6 +21,24 @@ async function run() {
     await client.connect();
     const toolCollection = client.db("power_painting").collection("tools");
     const orderCollection = client.db("power_painting").collection("orders");
+    const reviewCollection = client.db("power_painting").collection("reviews");
+    const userCollection = client.db("power_painting").collection("users");
+
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
 
     app.get("/tool", async (req, res) => {
       const query = {};
@@ -44,6 +62,16 @@ async function run() {
       const query = { email: email };
       const orders = await orderCollection.find(query).toArray();
       res.send(orders);
+    });
+    app.post("/review", async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
+    app.get("/review", async (req, res) => {
+      const query = {};
+      const reviews = await reviewCollection.find(query).toArray();
+      res.send(reviews);
     });
   } finally {
   }
