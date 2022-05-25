@@ -20,6 +20,7 @@ async function run() {
   try {
     await client.connect();
     const toolCollection = client.db("power_painting").collection("tools");
+    const orderCollection = client.db("power_painting").collection("orders");
 
     app.get("/tool", async (req, res) => {
       const query = {};
@@ -31,6 +32,18 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await toolCollection.findOne(query);
       res.send(result);
+    });
+    //http://localhost:5000/order
+    app.post("/order", async (req, res) => {
+      const order = req.body;
+      const result = await orderCollection.insertOne(order);
+      res.send(result);
+    });
+    app.get("/order", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const orders = await orderCollection.find(query).toArray();
+      res.send(orders);
     });
   } finally {
   }
