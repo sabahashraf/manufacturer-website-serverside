@@ -38,13 +38,31 @@ async function run() {
     const reviewCollection = client.db("power_painting").collection("reviews");
     const userCollection = client.db("power_painting").collection("users");
 
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({
+        email: requester,
+      });
+      if (requesterAccount.role === "admin") {
+        next();
+      } else {
+        res.status(403).send({ message: "Forbidden access" });
+      }
+    };
+
     app.get("/user", verifyJWT, async (req, res) => {
       const query = {};
       const users = await userCollection.find({}).toArray();
       res.send(users);
     });
+    app.get("/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email: email });
+      const isAdmin = user.role === "admin";
+      res.send({ admin: isAdmin });
+    });
 
-    app.put("/user/admin/:email", verifyJWT, async (req, res) => {
+    app.put("/user/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
       const email = req.params.email;
 
       const filter = { email: email };
@@ -75,6 +93,11 @@ async function run() {
         { expiresIn: "1d" }
       );
       res.send({ result, token });
+    });
+    app.post("/tool", verifyJWT, verifyAdmin, async (req, res) => {
+      const newTool = req.body;
+      const result = await toolCollection.insertOne(newTool);
+      res.send(result);
     });
 
     app.get("/tool", async (req, res) => {
