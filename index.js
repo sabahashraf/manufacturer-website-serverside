@@ -50,10 +50,16 @@ async function run() {
       }
     };
 
-    app.get("/user", verifyJWT, async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const query = {};
       const users = await userCollection.find({}).toArray();
       res.send(users);
+    });
+    app.get("/user", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      res.send(user);
     });
     app.get("/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -74,6 +80,7 @@ async function run() {
 
       res.send(result);
     });
+
     app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
       const user = req.body;
@@ -94,15 +101,24 @@ async function run() {
       );
       res.send({ result, token });
     });
+
     app.post("/tool", verifyJWT, verifyAdmin, async (req, res) => {
       const newTool = req.body;
       const result = await toolCollection.insertOne(newTool);
       res.send(result);
     });
+    app.delete("/tool/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+
+      const result = await toolCollection.deleteOne(filter);
+      res.send(result);
+    });
 
     app.get("/tool", async (req, res) => {
       const query = {};
-      const tools = await toolCollection.find({}).limit(6).toArray();
+      const tools = await toolCollection.find({}).toArray();
       res.send(tools);
     });
     app.get("/tool/:id", async (req, res) => {
