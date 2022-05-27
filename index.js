@@ -159,6 +159,11 @@ async function run() {
         return res.status(403).send({ message: "forbidden access" });
       }
     });
+    app.get("/orders", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = {};
+      const orders = await orderCollection.find(query).toArray();
+      res.send(orders);
+    });
     app.patch("/order/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const payment = req.body;
@@ -166,6 +171,7 @@ async function run() {
       const updatedDoc = {
         $set: {
           paid: true,
+          status: "pending",
           transactionId: payment.transactionId,
         },
       };
@@ -183,6 +189,29 @@ async function run() {
       res.send(result);
     });
     app.delete("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+
+      const result = await orderCollection.deleteOne(filter);
+      res.send(result);
+    });
+    app.put("/order/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "Shipped",
+        },
+      };
+      const updatedBooking = await orderCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(updatedBooking);
+    });
+    app.delete("/order/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       console.log(id);
       const filter = { _id: ObjectId(id) };
