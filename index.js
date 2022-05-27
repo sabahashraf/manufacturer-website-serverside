@@ -5,6 +5,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -37,6 +38,9 @@ async function run() {
     const orderCollection = client.db("power_painting").collection("orders");
     const reviewCollection = client.db("power_painting").collection("reviews");
     const userCollection = client.db("power_painting").collection("users");
+    const paymentCollection = client
+      .db("power_painting")
+      .collection("payments");
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
@@ -49,6 +53,17 @@ async function run() {
         res.status(403).send({ message: "Forbidden access" });
       }
     };
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { toolPrice } = req.body;
+
+      const amount = parseInt(toolPrice * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
 
     app.get("/users", verifyJWT, async (req, res) => {
       const query = {};
@@ -144,6 +159,38 @@ async function run() {
         return res.status(403).send({ message: "forbidden access" });
       }
     });
+    app.patch("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatedBooking = await orderCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      const result = await paymentCollection.insertOne(payment);
+      res.send(updatedBooking);
+    });
+    app.get("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await orderCollection.findOne(filter);
+      res.send(result);
+    });
+    app.delete("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+
+      const result = await orderCollection.deleteOne(filter);
+      res.send(result);
+    });
+
     app.post("/review", verifyJWT, async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
