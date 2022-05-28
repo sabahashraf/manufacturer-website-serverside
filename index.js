@@ -116,6 +116,24 @@ async function run() {
       );
       res.send({ result, token });
     });
+    app.patch("/user/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+
+      const updatedDoc = {
+        $set: {
+          education: user.education,
+          linkedin: user.linkedin,
+          location: user.location,
+
+          phone: user.phone,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+
+      res.send(result);
+    });
 
     app.post("/tool", verifyJWT, verifyAdmin, async (req, res) => {
       const newTool = req.body;
