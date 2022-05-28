@@ -1,6 +1,7 @@
 # Website Name:
 Power Painting Tools
 ## Live link:
+https://power-painting-tools.web.app/
 ## Features and Funtionality:
 * This website is about painting tool manufacturer company which can be used both by customers and admin
 * To purchase  a tool a customer has to sign up/log in .Once he/she logged in she can go his/her dashboard and see orders.He/she can cancel it or proceed for checkout with a valid card payment.He/she can also leave a review and update his/her profile
